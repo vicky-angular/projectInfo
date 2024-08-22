@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { TextField, Button, Modal, Box, Typography, Grid } from '@mui/material';
 import MenuItem from '@mui/material/MenuItem';
@@ -8,19 +8,38 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import './Projects.css';
+import { db } from '../../firebaseConfig';
+import { getDocs, collection } from 'firebase/firestore';
 
-
+async function fetchDataFromFirestore(){
+  const querySnapshot = await getDocs(collection(db, "projects-collection"));
+  const data = [];
+  querySnapshot.forEach((doc) =>{
+    data.push({id:doc.id, ...doc.data()});
+  });
+  return data;
+}
 
 const Projects = () => {
+    const [userData, setUserData] = useState([]);
+    useEffect(()=>{
+      async function fetchData() {
+     const data = await fetchDataFromFirestore();
+     setUserData(data);
+      }
+      fetchData();
+    },[]);
+    console.log('FETCH PROJECT WHICH YOU GOT---', userData)
 
     const columns = [
         { field: 'id', headerName: 'ID', width: 70 },
         { field: 'projectName', headerName: 'Project Name', width: 150 },
-        { field: 'domain', headerName: 'Domain', width: 100 },
-        { field: 'technology', headerName: 'Technology', width: 100 },
-        { field: 'unitName', headerName: 'Unit Name', width: 100 },
-        { field: 'primarySkill', headerName: 'Primary Skill', width: 100 },
-        { field: 'secondarySkill', headerName: 'Secondary Skill', width: 100 },
+        { field: 'technology', headerName: 'Technology', width: 150 },
+        { field: 'domain', headerName: 'Domain', width: 150 },
+        { field: 'description', headerName: 'Description', width: 150 },
+        { field: 'postedBy', headerName: 'Posted By', width: 100 },
+        { field: 'primarySkills', headerName: 'Primary Skill', width: 100 },
+        { field: 'secondarySkills', headerName: 'Secondary Skill', width: 100 },
         { field: 'viewInfo', headerName: 'View Info', width: 100, 
           renderCell: (params) => (
               <Button
@@ -31,14 +50,6 @@ const Projects = () => {
                 View Info
               </Button>
             ), },
-      ];
-      
-      const rows = [
-        { id: 1, projectName: 'Project 1', unitName: 'management', primarySkill: 'React, JavaScript',  secondarySkill: 'salesforce, api', domain: 'Web Development', technology: 'Frontend' },
-        { id: 2, projectName: 'Project 2', unitName: 'management', primarySkill: 'Node.js, Express', secondarySkill: 'salesforce, api', domain: 'Backend Development', technology: 'API' },
-        { id: 3, projectName: 'Project 3', unitName: 'management', primarySkill: 'Angular, TypeScript', secondarySkill: 'salesforce, api',  domain: 'Web Development', technology: 'Frontend' },
-        { id: 4, projectName: 'Project 4', unitName: 'management', primarySkill: 'Vue.js, JavaScript', secondarySkill: 'salesforce, api', domain: 'Web Development', technology: 'Frontend' },
-        { id: 5, projectName: 'Project 5', unitName: 'management', primarySkill: 'Python, Django', secondarySkill: 'salesforce, api', domain: 'Backend Development', technology: 'API' },
       ];
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,13 +70,15 @@ const Projects = () => {
     setSearchTerm(event.target.value);
   };
 
-  const filteredRows = rows.filter((row) => {
+  const filteredRows = userData.filter((row) => {
     return (
       row.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.primarySkill.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.secondarySkill.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.technology.toLowerCase().includes(searchTerm.toLowerCase())
+      row.primarySkills.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.secondarySkills.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.description.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+      row.postedBy.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+      row.technology.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+      row.domain.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
     );
   });
 
@@ -158,8 +171,8 @@ const Projects = () => {
         {/* <InputLabel id="demo-multiple-name-label">Name</InputLabel> */}
         <Select
   multiple
-  value={formData.primarySkill ? formData.primarySkill.split(',') : []}
-  onChange={(e) => handleInputChange(e, 'primarySkill')}
+  value={formData.primarySkills ? formData.primarySkills.split(',') : []}
+  onChange={(e) => handleInputChange(e, 'primarySkills')}
   renderValue={(selected) => (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
       {selected.map((value) => (
@@ -182,8 +195,8 @@ const Projects = () => {
       <FormControl sx={{ m: 1, width: 100 }}>
     <Select
       multiple
-      value={formData.secondarySkill ? formData.secondarySkill.split(',') : []}
-      onChange={(e) => handleInputChange(e, 'secondarySkill')}
+      value={formData.secondarySkills ? formData.secondarySkills.split(',') : []}
+      onChange={(e) => handleInputChange(e, 'secondarySkills')}
       renderValue={(selected) => (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {selected.map((value) => (
@@ -250,8 +263,8 @@ const Projects = () => {
                                       <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.projectName}</Typography>
                                   </Grid>
                                   <Grid item xs={6}>
-                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Skills:</Typography>
-                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.skills}</Typography>
+                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Posted By:</Typography>
+                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.postedBy}</Typography>
                                   </Grid>
                                   <Grid item xs={6}>
                                       <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Domain:</Typography>
@@ -262,16 +275,16 @@ const Projects = () => {
                                       <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.technology}</Typography>
                                   </Grid>
                                   <Grid item xs={6}>
-                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Start Date:</Typography>
-                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.startDate}</Typography>
+                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Primary Skills:</Typography>
+                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.primarySkills}</Typography>
                                   </Grid>
                                   <Grid item xs={6}>
-                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>End Date:</Typography>
-                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.endDate}</Typography>
+                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Secondary Skills:</Typography>
+                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.secondarySkills}</Typography>
                                   </Grid>
                                   <Grid item xs={6}>
-                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>Budget:</Typography>
-                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.budget}</Typography>
+                                      <Typography sx={{ fontSize: 16, fontWeight: 500 }}>technology:</Typography>
+                                      <Typography sx={{ fontSize: 14 }}>{selectedRow && selectedRow.technology}</Typography>
                                   </Grid>
                               </Grid><Button
                                   variant="contained"
