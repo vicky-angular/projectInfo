@@ -139,5 +139,5 @@ HistoryList.propTypes = {
    */
   window: PropTypes.func,
 };
+export default HistoryList;
 
-export {HistoryList};
