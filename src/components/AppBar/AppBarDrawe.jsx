@@ -29,7 +29,7 @@ const navItems = [
 
 function AppBarDrawer(props) {
   const { window, children } = props;
-  const [mobileOpen, setMobileOpen] = React.useState(true);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -79,7 +79,7 @@ function AppBarDrawer(props) {
           </Typography>
           <Box>
             {navItems.map((item) => (
-              <Button key={item.label} sx={{ color: "#fff" }}>
+              <Button  key={item.label} sx={{ color: "#fff" }}>
                 {item.label}
               </Button>
             ))}

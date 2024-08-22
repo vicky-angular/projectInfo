@@ -10,58 +10,100 @@ import EditIcon from "@mui/icons-material/Edit";
 import "./Projects.css";
 import { db } from "../../firebaseConfig";
 import { getDocs, collection } from "firebase/firestore";
+import { addDoc } from 'firebase/firestore';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { doc, updateDoc } from 'firebase/firestore';
+
 
 async function fetchDataFromFirestore() {
-  const querySnapshot = await getDocs(collection(db, "projects-collection"));
+  const querySnapshot = await getDocs(collection(db, "Projects"));
   const data = [];
   querySnapshot.forEach((doc) => {
     data.push({ id: doc.id, ...doc.data() });
   });
+  console.log(data)
   return data;
 }
 
+const saveToDB = async (data) => {
+  try {
+    const docRef = await addDoc(collection(db, "Projects"), {
+      ...data,
+      
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", data);
+  }
+};
+
+const updateStatus = async (documentId, newStatus) => {
+  try {
+    // Get a reference to the document in the 'orders' collection
+    const docRef = doc(db, "Projects", documentId);
+
+    // Update the 'status' field
+    await updateDoc(docRef, {
+      ...newStatus
+    });
+
+    console.log("Document successfully updated!");
+  } catch (error) {
+    console.error("Error updating document: ", error);
+  }
+};
+
 const Projects = () => {
-  const [userData, setUserData] = useState([]);
+  const [userData, setUserData] = useState({name: 'Sahil', Unit: 'DX', id: '6481564'});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true); // set to true for admin, false for non-admin
+  const [formData, setFormData] = useState({});
+  const [isEditMode, setIsEditMode] = useState(false);
   useEffect(() => {
     async function fetchData() {
       const data = await fetchDataFromFirestore();
-      setUserData(data);
+      setProjects(data);
     }
     fetchData();
   }, []);
-  console.log("FETCH PROJECT WHICH YOU GOT---", userData);
+  console.log("FETCH PROJECT WHICH YOU GOT---", projects);
 
   const columns = [
     { field: "id", headerName: "ID", width: 70 },
-    { field: "projectName", headerName: "Project Name", width: 150 },
-    { field: "technology", headerName: "Technology", width: 150 },
+    { field: "name", headerName: "Project Name", width: 150 },
+    { field: "skill", headerName: "Technology", width: 150 },
     { field: "domain", headerName: "Domain", width: 150 },
     { field: "description", headerName: "Description", width: 150 },
     { field: "postedBy", headerName: "Posted By", width: 100 },
-    { field: "primarySkills", headerName: "Primary Skill", width: 100 },
-    { field: "secondarySkills", headerName: "Secondary Skill" },
     {
       field: "viewInfo",
       headerName: "View Info",
       width: 170,
-      renderCell: (params) => (
-        <Button
+      renderCell: (params) => (<>
+      <Button
           variant="contained"
           size="small"
           onClick={() => handleViewInfoClick(params.row)}
         >
           View Info
         </Button>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => handleViewInfoClick(params.row)}
+        >
+          <DeleteIcon />
+        </Button>
+      </>
+        
       ),
     },
   ];
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRow, setSelectedRow] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(true); // set to true for admin, false for non-admin
-  const [formData, setFormData] = useState({});
-  const [isEditMode, setIsEditMode] = useState(false);
+
 
   const handleViewInfoClick = (data) => {
     console.log("THE ROW DATA---->", data);
@@ -74,20 +116,16 @@ const Projects = () => {
     setSearchTerm(event.target.value);
   };
 
-  const filteredRows = userData.filter((row) => {
+  const filteredRows = projects.filter((row) => {
     return (
-      row.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.primarySkills.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.secondarySkills.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.description.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
-      row.postedBy.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
-      row.technology
-        .toLocaleLowerCase()
-        .includes(searchTerm.toLocaleLowerCase()) ||
-      row.domain.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())
+      row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.skill.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.domain.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      row.unit.toLowerCase().includes(searchTerm.toLocaleLowerCase()) ||
+      row.postedBy.toLowerCase().includes(searchTerm.toLocaleLowerCase())
     );
   });
-
+console.log(filteredRows)
   const handleCloseModal = () => {
     setOpenModal(false);
   };
@@ -105,6 +143,10 @@ const Projects = () => {
     // API call to save changes
     console.log("Changes saved!", formData);
     handleCloseModal();
+    saveToDB({...formData,
+      status: 'OPEN',
+      postedBy: userData.name
+    })
   };
   return (
     <div className="projects-container">
@@ -117,6 +159,17 @@ const Projects = () => {
           fullWidth
         />
       </div>
+      {isAdmin && < >
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => {
+            setOpenModal(true)
+          }}
+        >
+          Publish
+        </Button>
+      </>}
       <div className="table-container">
         <DataGrid
           rows={filteredRows}
@@ -166,92 +219,19 @@ const Projects = () => {
           {isEditMode ? (
             <form>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
+                <Grid item xs={12} sm={12} md={12} lg={12}>
                   <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
                     Project Name:
                   </Typography>
                   <TextField
-                    value={formData.projectName}
-                    onChange={(e) => handleInputChange(e, "projectName")}
+                    value={formData.name}
+                    onChange={(e) => {handleInputChange(e, "name")}}
                     variant="outlined"
                     size="small"
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Primary:
-                  </Typography>
-                  <FormControl sx={{ m: 1, width: 100 }}>
-                    {/* <InputLabel id="demo-multiple-name-label">Name</InputLabel> */}
-                    <Select
-                      multiple
-                      value={
-                        formData.primarySkills
-                          ? formData.primarySkills.split(",")
-                          : []
-                      }
-                      onChange={(e) => handleInputChange(e, "primarySkills")}
-                      renderValue={(selected) => (
-                        <Box
-                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
-                        >
-                          {selected.map((value) => (
-                            <Chip key={value} label={value} />
-                          ))}
-                        </Box>
-                      )}
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                    >
-                      {formData?.primarySkill
-                        ?.split(",")
-                        .map((skill, index) => (
-                          <MenuItem key={index} value={skill.trim()}>
-                            {skill.trim()}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Secondary:
-                  </Typography>
-                  <FormControl sx={{ m: 1, width: 100 }}>
-                    <Select
-                      multiple
-                      value={
-                        formData.secondarySkills
-                          ? formData.secondarySkills.split(",")
-                          : []
-                      }
-                      onChange={(e) => handleInputChange(e, "secondarySkills")}
-                      renderValue={(selected) => (
-                        <Box
-                          sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
-                        >
-                          {selected.map((value) => (
-                            <Chip key={value} label={value} />
-                          ))}
-                        </Box>
-                      )}
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                    >
-                      {formData?.secondarySkill
-                        ?.split(",")
-                        .map((skill, index) => (
-                          <MenuItem key={index} value={skill.trim()}>
-                            {skill.trim()}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
+                <Grid item xs={12} sm={12} md={12} lg={12}>
                   <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
                     Domain:
                   </Typography>
@@ -263,19 +243,44 @@ const Projects = () => {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
+                <Grid item xs={12} sm={12} md={12} lg={12}>
                   <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Technology:
+                    Unit:
                   </Typography>
                   <TextField
-                    value={formData.technology}
-                    onChange={(e) => handleInputChange(e, "technology")}
+                    value={formData.unit}
+                    onChange={(e) => {handleInputChange(e, "unit")}}
                     variant="outlined"
                     size="small"
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={3}>
+                <Grid item xs={12} sm={12} md={12} lg={12}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
+                    Technology:
+                  </Typography>
+                  <TextField
+                    value={formData.skill}
+                    onChange={(e) => handleInputChange(e, "skill")}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12} sm={12} md={12} lg={12}>
+                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
+                    Description:
+                  </Typography>
+                  <TextField
+                    value={formData.description}
+                    onChange={(e) => {handleInputChange(e, "description")}}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                
+                <Grid item xs={12} sm={12} md={12} lg={12}>
                   <Button
                     variant="contained"
                     color="primary"
@@ -351,7 +356,7 @@ const Projects = () => {
                     technology:
                   </Typography>
                   <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.technology}
+                    {selectedRow && selectedRow.skill}
                   </Typography>
                 </Grid>
               </Grid>

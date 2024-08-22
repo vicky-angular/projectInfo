@@ -3,14 +3,12 @@ import AppRoutes from "./Auth/Routes";
 import { AppBarDrawer } from "./components/AppBar/AppBarDrawe";
 
 function App() {
- 
-  return (<>
-  <AppBarDrawer >
-  <AppRoutes />
-
-  </AppBarDrawer>
-
-  </>
+  return (
+    <>
+      <AppBarDrawer>
+        <AppRoutes />
+      </AppBarDrawer>
+    </>
   );
 }
 
