@@ -188,7 +188,7 @@ const Projects = () => {
     })
   };
   return (
-    <div className="projects-container">
+    <div className="projects-container" data-testid="test-projects">
       <div className="search-bar-container">
         <TextField
           value={searchTerm}

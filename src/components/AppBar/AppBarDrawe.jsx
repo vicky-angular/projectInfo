@@ -14,12 +14,13 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import { useNavigate } from "react-router-dom";
 // import {Projects} from '../Projects/Projects';
 const drawerWidth = 240;
 const navItems = [
   {
     label: "Projects",
-    path: "/projects",
+    path: "/",
   },
   {
     label: "History",
@@ -30,6 +31,7 @@ const navItems = [
 function AppBarDrawer(props) {
   const { window, children } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -43,7 +45,9 @@ function AppBarDrawer(props) {
       <Divider />
       <List>
         {navItems.map((item) => (
-          <ListItem key={item.label} disablePadding>
+          <ListItem key={item.label} disablePadding onClick={() => {
+            navigate(item.path);
+          }} data-testid={`test-${item.label}`}>
             <ListItemButton sx={{ textAlign: "center" }}>
               <ListItemText primary={item.label} />
             </ListItemButton>
@@ -79,7 +83,12 @@ function AppBarDrawer(props) {
           </Typography>
           <Box>
             {navItems.map((item) => (
-              <Button  key={item.label} sx={{ color: "#fff" }}>
+              <Button data-testid={`test-${item.label}-btn`} key={item.label} sx={{ color: "#fff" }}
+              onClick={() => {
+            navigate(item.path);
+
+              }}
+              >
                 {item.label}
               </Button>
             ))}

@@ -7,7 +7,7 @@ import { db } from "../../firebaseConfig";
 import { getDocs, collection,  query, where, } from "firebase/firestore";
 import { doc, updateDoc } from 'firebase/firestore';
 
-async function fetchDataFromFirestore(table, id = null) {
+async function fetchDataFromFirestore(table) {
   const usersRef = collection(db, table);
 
   // Create a query with multiple conditions
@@ -15,17 +15,12 @@ async function fetchDataFromFirestore(table, id = null) {
     usersRef,
     where("status", "!=", "WITHDRAW") 
   );
-
-  // Conditionally add where clauses if filters are present
-  if (id) {
-    q = query(q, where("applicantId", "==", id));
-  }
  
   // Execute the query
   const querySnapshot = await getDocs(q);
 
   const data = [];
-  querySnapshot.forEach((doc) => {
+  querySnapshot?.forEach((doc) => {
     data.push({ id: doc.id, ...doc.data() });
   });
   console.log(data)
@@ -52,14 +47,14 @@ const updateStatus = async (documentId, newStatus) => {
 const HistoryList = () => {
   const isAdmin = false; // set to true for admin, false for non-admin
 
-  const [userData] = useState(isAdmin ? {name: 'Sahil', Unit: 'DX', id: '6481564', }: {
+  const userData = isAdmin ? {name: 'Sahil', Unit: 'DX', id: '6481564', }: {
     name: 'Rohit', Unit: 'DX', id: '845845', skill: 'React, Node'
-  });
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [applications, setApplications] = useState([]);
   async function fetchData() {
-    const userIdForApps = isAdmin ? null : userData.id;
-    const applications = await fetchDataFromFirestore("Applications", userIdForApps);
+    // const userIdForApps = isAdmin ? userData.id : userData.id;
+    const applications = await fetchDataFromFirestore("Applications", userData.id);
    
     setApplications(applications)
   }
@@ -80,6 +75,7 @@ const HistoryList = () => {
       renderCell: (params) => (<>
       {!isAdmin && (
           <Button
+          data-testid={`test-action-btn-${params.id}`}
           variant="contained"
           size="small"
           onClick={() => {
@@ -132,7 +128,7 @@ const HistoryList = () => {
   });
 
   return (
-    <div className="projects-container">
+    <div className="projects-container" data-testid="test-history">
       <div className="search-bar-container">
         <TextField
           value={searchTerm}
