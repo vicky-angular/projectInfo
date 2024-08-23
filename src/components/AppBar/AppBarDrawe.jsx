@@ -116,6 +116,7 @@ function AppBarDrawer(props) {
 
 AppBarDrawer.propTypes = {
   window: PropTypes.func,
+  children: PropTypes.element
 };
 
 export { AppBarDrawer };

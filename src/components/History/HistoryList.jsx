@@ -1,66 +1,160 @@
-import * as React from "react";
+import React, { useEffect, useState } from "react";
+import { TextField, Button, } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 import PropTypes from "prop-types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from "@mui/material";
 import "./HistoryList.css";
+import { db } from "../../firebaseConfig";
+import { getDocs, collection,  query, where, } from "firebase/firestore";
+import { doc, updateDoc } from 'firebase/firestore';
 
-function HistoryList(props) {
-  const historyItems = [
+async function fetchDataFromFirestore(table, id = null) {
+  const usersRef = collection(db, table);
+
+  // Create a query with multiple conditions
+  let q = query(
+    usersRef,
+    where("status", "!=", "WITHDRAW") 
+  );
+
+  // Conditionally add where clauses if filters are present
+  if (id) {
+    q = query(q, where("applicantId", "==", id));
+  }
+ 
+  // Execute the query
+  const querySnapshot = await getDocs(q);
+
+  const data = [];
+  querySnapshot.forEach((doc) => {
+    data.push({ id: doc.id, ...doc.data() });
+  });
+  console.log(data)
+  return data;
+}
+
+const updateStatus = async (documentId, newStatus) => {
+  try {
+    // Get a reference to the document in the 'orders' collection
+    const docRef = doc(db, "Applications", documentId);
+
+    // Update the 'status' field
+    await updateDoc(docRef, {
+      ...newStatus
+    });
+
+    console.log("Document successfully updated!");
+  } catch (error) {
+    console.error("Error updating document: ", error);
+  }
+};
+
+
+const HistoryList = () => {
+  const isAdmin = false; // set to true for admin, false for non-admin
+
+  const [userData] = useState(isAdmin ? {name: 'Sahil', Unit: 'DX', id: '6481564', }: {
+    name: 'Rohit', Unit: 'DX', id: '845845', skill: 'React, Node'
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [applications, setApplications] = useState([]);
+  async function fetchData() {
+    const userIdForApps = isAdmin ? null : userData.id;
+    const applications = await fetchDataFromFirestore("Applications", userIdForApps);
+   
+    setApplications(applications)
+  }
+  useEffect(() => {
+    fetchData();
+  }, []);
+  // console.log("FETCH PROJECT WHICH YOU GOT---", projects);
+
+  const columns = [
+    { field: "projectName", headerName: "Project Name", width: 200 },
+    { field: "applicantName", headerName: "Applicant", width: 200 },
+    { field: "skill", headerName: "Skill", width: 150 },
+    { field: "status", headerName: "Status", width: 150 },
     {
-      id: 1,
-      projectName: "Project 1",
-      description: "Applied on 2022-01-01",
-      status: "Approved",
-    },
-    {
-      id: 2,
-      projectName: "Project 2",
-      description: "Applied on 2022-01-15",
-      status: "Rejected",
-    },
-    {
-      id: 3,
-      projectName: "Project 3",
-      description: "Applied on 2022-02-01",
-      status: "Pending",
+      field: "viewInfo",
+      headerName: "Actions",
+      width: 200,
+      renderCell: (params) => (<>
+      {!isAdmin && (
+          <Button
+          variant="contained"
+          size="small"
+          onClick={() => {
+            console.log(params)
+            updateStatus(params.id, {status: 'WITHDRAW'})
+            setTimeout(() => {
+            fetchData()
+              
+            });
+          }}
+        >
+         Withdraw
+        </Button>
+      )}
+        {isAdmin && (<>
+          <Button
+          variant="contained"
+          size="small"
+          onClick={() => {
+            updateStatus(params.id, {status: 'ACCEPTED'})}}
+        >
+         Accept
+        </Button>
+          <Button
+          variant="contained"
+          size="small"
+          onClick={() => {updateStatus(params.id, {status: 'REJECTED'})}}
+        >
+         Reject
+        </Button></>)}
+      </>
+      ),
     },
   ];
 
+
+
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const filteredRows = applications.filter((row) => {
+    return (
+      row.projectName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      row.skill?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      row.applicant?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      row.status?.toLowerCase()?.includes(searchTerm.toLocaleLowerCase())
+    );
+  });
+
   return (
-    <div>
-      <h1>History</h1>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Project Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {historyItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell component="th" scope="row">
-                  {item.projectName}
-                </TableCell>
-                <TableCell>{item.description}</TableCell>
-                <TableCell>{item.status}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+    <div className="projects-container">
+      <div className="search-bar-container">
+        <TextField
+          value={searchTerm}
+          onChange={handleSearch}
+          placeholder="Search by project name, skills, Applicant, or status"
+          variant="outlined"
+          fullWidth
+        />
+      </div>
+      
+      <div className="table-container">
+        <DataGrid
+          rows={filteredRows}
+          columns={columns}
+          pageSize={5}
+          rowsPerPageOptions={[5]}
+        />
+      </div>
     </div>
   );
-}
+};
+
 
 HistoryList.propTypes = {
   /**

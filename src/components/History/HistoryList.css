@@ -1,6 +1,148 @@
-.history-table {
-    background-color: #f7f7f7;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 20px;
+/* General container styling for the entire layout */
+body {
+  margin: 0;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  background-color: #f0f4f8;
+}
+
+/* AppBar and Toolbar styles */
+.MuiAppBar-root {
+  background-color: #1976d2; /* Consistent primary color */
+}
+
+.MuiToolbar-root {
+  justify-content: space-between;
+}
+
+/* Drawer styling */
+.MuiDrawer-paper {
+  width: 240px;
+  background-color: #ffffff; /* Light background for Drawer */
+  box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Main content area */
+.MuiBox-root[component="main"] {
+  flex-grow: 1;
+  padding: 24px;
+  background-color: #f0f4f8; /* Consistent background color */
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Responsive search bar and table container */
+.projects-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* padding: 20px; */
+  width: 100%;
+  position: relative;
+  /* left: 275px; */
+}
+
+.search-bar-container {
+  width: 100%;
+  max-width: 600px; /* Limits max width for larger screens */
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: flex-end; /* Aligns the search bar to the right end */
+}
+
+.search-bar-container .MuiTextField-root {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* DataGrid styling */
+.MuiDataGrid-root {
+  border: none;
+  width: 100%;
+}
+
+.MuiDataGrid-columnHeader {
+  background-color: #1976d2;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 2px solid #005bb5;
+}
+
+.MuiDataGrid-row {
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.3s ease;
+}
+
+.MuiDataGrid-row:hover {
+  background-color: #e3f2fd;
+}
+
+.MuiDataGrid-cell {
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.MuiDataGrid-cell .MuiButton-root {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: #1976d2;
+  color: #ffffff;
+  transition: background-color 0.3s ease;
+}
+
+.MuiDataGrid-cell .MuiButton-root:hover {
+  background-color: #005bb5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .table-container {
+      width: 100%;
+      max-width: 100%;
   }
+
+  .MuiDataGrid-cell {
+      font-size: 12px;
+      padding: 8px;
+  }
+
+  .search-bar-container {
+      width: 90%;
+  }
+
+  .MuiDataGrid-cell .MuiButton-root {
+      font-size: 12px;
+      padding: 5px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-bar-container {
+      width: 100%;
+  }
+
+  .MuiDataGrid-cell {
+      font-size: 10px;
+      padding: 6px;
+  }
+
+  .MuiDataGrid-cell .MuiButton-root {
+      font-size: 10px;
+      padding: 4px 6px;
+  }
+}

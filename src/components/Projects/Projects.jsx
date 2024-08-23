@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { TextField, Button, Modal, Box, Typography, Grid } from "@mui/material";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import EditIcon from "@mui/icons-material/Edit";
 import "./Projects.css";
@@ -13,15 +9,14 @@ import { getDocs, collection } from "firebase/firestore";
 import { addDoc } from 'firebase/firestore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { doc, updateDoc } from 'firebase/firestore';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-
-async function fetchDataFromFirestore() {
-  const querySnapshot = await getDocs(collection(db, "Projects"));
+async function fetchDataFromFirestore(table) {
+  const querySnapshot = await getDocs(collection(db, table));
   const data = [];
   querySnapshot.forEach((doc) => {
     data.push({ id: doc.id, ...doc.data() });
   });
-  console.log(data)
   return data;
 }
 
@@ -36,6 +31,20 @@ const saveToDB = async (data) => {
     console.error("Error adding document: ", data);
   }
 };
+
+const apply = async (data) => {
+  try {
+    const docRef = await addDoc(collection(db, "Applications"), {
+      ...data,
+      
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", data);
+  }
+};
+
+
 
 const updateStatus = async (documentId, newStatus) => {
   try {
@@ -53,52 +62,83 @@ const updateStatus = async (documentId, newStatus) => {
   }
 };
 
+const updateStatusApp = async (documentId, newStatus) => {
+  try {
+    // Get a reference to the document in the 'orders' collection
+    const docRef = doc(db, "Applications", documentId);
+
+    // Update the 'status' field
+    await updateDoc(docRef, {
+      ...newStatus
+    });
+
+    console.log(documentId,newStatus,  "Document successfully updated!");
+  } catch (error) {
+    console.error("Error updating document: ", error);
+  }
+};
+
 const Projects = () => {
-  const [userData, setUserData] = useState({name: 'Sahil', Unit: 'DX', id: '6481564'});
+  const [isAdmin] = useState(false); // set to true for admin, false for non-admin
+
+  const [userData] = useState(isAdmin ? {name: 'Sahil', Unit: 'DX', id: '6481564', }: {
+    name: 'Rohit', Unit: 'DX', id: '845845', skill: 'React, Node'
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [applied, setApplied] = useState({})
+  // const [applications, setApplications] = useState([]);
+  // const [selectedRow, setSelectedRow] = useState(null);
   const [openModal, setOpenModal] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(true); // set to true for admin, false for non-admin
   const [formData, setFormData] = useState({});
-  const [isEditMode, setIsEditMode] = useState(false);
+  // const [isEditMode, setIsEditMode] = useState(false);
+  async function fetchData() {
+    const data = await fetchDataFromFirestore("Projects");
+    const applications = await fetchDataFromFirestore("Applications");
+    const obj = {}
+    applications.forEach(element => {
+      if ((element.applicantId === userData.id) && (element.status === 'SUBMITTED'|| element.status === 'ACCEPTED')) {
+        obj[element.projectId] = element.id;
+      }
+    });
+    setApplied(obj)
+    setProjects(data);
+    // setApplications(applications)
+  }
   useEffect(() => {
-    async function fetchData() {
-      const data = await fetchDataFromFirestore();
-      setProjects(data);
-    }
+    
     fetchData();
   }, []);
-  console.log("FETCH PROJECT WHICH YOU GOT---", projects);
+  // console.log("FETCH PROJECT WHICH YOU GOT---", projects);
 
   const columns = [
-    { field: "id", headerName: "ID", width: 70 },
-    { field: "name", headerName: "Project Name", width: 150 },
-    { field: "skill", headerName: "Technology", width: 150 },
+    // { field: "id", headerName: "ID", width: 70 },
+    { field: "name", headerName: "Project Name", width: 200 },
+    { field: "skill", headerName: "Technology", width: 200 },
     { field: "domain", headerName: "Domain", width: 150 },
     { field: "description", headerName: "Description", width: 150 },
-    { field: "postedBy", headerName: "Posted By", width: 100 },
+    { field: "status", headerName: "Status", width: 150 },
+    { field: "postedBy", headerName: "Posted By", width: 150 },
     {
       field: "viewInfo",
       headerName: "View Info",
-      width: 170,
+      width: 200,
       renderCell: (params) => (<>
       <Button
           variant="contained"
           size="small"
-          onClick={() => handleViewInfoClick(params.row)}
+          onClick={() => {handleViewInfoClick(params.row)}}
         >
-          View Info
+         <VisibilityIcon />
         </Button>
-        <Button
+        {isAdmin && <Button
           variant="contained"
           size="small"
-          onClick={() => handleViewInfoClick(params.row)}
+          onClick={() => {updateStatus(params.id, {status: 'CLOSED'})}}
         >
           <DeleteIcon />
-        </Button>
+        </Button>}
       </>
-        
       ),
     },
   ];
@@ -107,7 +147,7 @@ const Projects = () => {
 
   const handleViewInfoClick = (data) => {
     console.log("THE ROW DATA---->", data);
-    setSelectedRow(data);
+    // setSelectedRow(data);
     setFormData({ ...data });
     setOpenModal(true);
   };
@@ -125,7 +165,6 @@ const Projects = () => {
       row.postedBy.toLowerCase().includes(searchTerm.toLocaleLowerCase())
     );
   });
-console.log(filteredRows)
   const handleCloseModal = () => {
     setOpenModal(false);
   };
@@ -176,8 +215,6 @@ console.log(filteredRows)
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}
-          checkboxSelection
-          disableSelectionOnClick
         />
       </div>
       <Modal
@@ -210,13 +247,13 @@ console.log(filteredRows)
           >
             Project Details
           </Typography>
-          {true && (
-            <IconButton onClick={() => setIsEditMode(true)}>
+          {isAdmin && (
+            <IconButton onClick={() => {
+              // setIsEditMode(true)
+              }}>
               <EditIcon />
             </IconButton>
           )}
-
-          {isEditMode ? (
             <form>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -224,6 +261,7 @@ console.log(filteredRows)
                     Project Name:
                   </Typography>
                   <TextField
+                    disabled={!isAdmin}
                     value={formData.name}
                     onChange={(e) => {handleInputChange(e, "name")}}
                     variant="outlined"
@@ -236,6 +274,7 @@ console.log(filteredRows)
                     Domain:
                   </Typography>
                   <TextField
+                    disabled={!isAdmin}
                     value={formData.domain}
                     onChange={(e) => handleInputChange(e, "domain")}
                     variant="outlined"
@@ -248,6 +287,7 @@ console.log(filteredRows)
                     Unit:
                   </Typography>
                   <TextField
+                    disabled={!isAdmin}
                     value={formData.unit}
                     onChange={(e) => {handleInputChange(e, "unit")}}
                     variant="outlined"
@@ -260,6 +300,7 @@ console.log(filteredRows)
                     Technology:
                   </Typography>
                   <TextField
+                    disabled={!isAdmin}
                     value={formData.skill}
                     onChange={(e) => handleInputChange(e, "skill")}
                     variant="outlined"
@@ -272,6 +313,7 @@ console.log(filteredRows)
                     Description:
                   </Typography>
                   <TextField
+                    disabled={!isAdmin}
                     value={formData.description}
                     onChange={(e) => {handleInputChange(e, "description")}}
                     variant="outlined"
@@ -281,14 +323,49 @@ console.log(filteredRows)
                 </Grid>
                 
                 <Grid item xs={12} sm={12} md={12} lg={12}>
-                  <Button
+                  {isAdmin ? <><Button
                     variant="contained"
                     color="primary"
                     sx={{ mt: 2 }}
-                    onClick={handleSaveChanges}
+                    onClick={() => {handleSaveChanges()
+                      fetchData()
+                    }}
                   >
                     Save Changes
-                  </Button>
+                  </Button></> : (<>
+                   {applied[formData.id] ? <Button
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 2 }}
+                    onClick={() => {
+                      updateStatusApp(applied[formData.id],{
+                        status: 'WITHDRAW'
+                      })
+                      setOpenModal(false);
+                      fetchData()
+                    }}
+                  >
+                    Withdraw
+                  </Button>: <Button
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 2 }}
+                    onClick={() => {
+                      apply({
+                        projectId: formData.id,
+                        applicantId: userData.id,
+                        applicantName: userData.name,
+                        skill: userData.skill,
+                        status: 'SUBMITTED',
+                        projectName: formData.name
+                      })
+                      setOpenModal(false);
+                      fetchData()
+                    }}
+                  >
+                    Apply
+                  </Button>} 
+                  </>)}
                   <Button
                     variant="contained"
                     color="secondary"
@@ -300,76 +377,6 @@ console.log(filteredRows)
                 </Grid>
               </Grid>
             </form>
-          ) : (
-            <>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Project Name:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.projectName}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Posted By:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.postedBy}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Domain:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.domain}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Technology:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.technology}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Primary Skills:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.primarySkills}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    Secondary Skills:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.secondarySkills}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography sx={{ fontSize: 16, fontWeight: 500 }}>
-                    technology:
-                  </Typography>
-                  <Typography sx={{ fontSize: 14 }}>
-                    {selectedRow && selectedRow.skill}
-                  </Typography>
-                </Grid>
-              </Grid>
-              <Button
-                variant="contained"
-                color="primary"
-                sx={{ mt: 2, float: "right" }}
-                onClick={handleCloseModal}
-              >
-                Close
-              </Button>
-            </>
-          )}
         </Box>
       </Modal>
     </div>
