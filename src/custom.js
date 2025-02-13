@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ToggleButton } from "@mui/material";
+import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
 const CustomToggleButton = styled(ToggleButton)(({ theme }) => ({
@@ -42,22 +42,27 @@ const CustomToggleButton = styled(ToggleButton)(({ theme }) => ({
   },
 }));
 
-const ToggleButtonComponent = () => {
-  const [selected, setSelected] = useState(false);
+const ToggleGroupComponent = () => {
+  const [selected, setSelected] = useState(null);
 
-  const handleToggle = () => {
-    setSelected((prev) => !prev);
+  const handleChange = (event, newSelection) => {
+    if (newSelection !== null) {
+      setSelected(newSelection);
+    }
   };
 
   return (
-    <CustomToggleButton 
-      selected={selected} 
-      onClick={handleToggle}
-      aria-label="toggle button"
+    <ToggleButtonGroup
+      value={selected}
+      exclusive
+      onChange={handleChange}
+      aria-label="toggle button group"
     >
-      Toggle
-    </CustomToggleButton>
+      <CustomToggleButton value="option1">Option 1</CustomToggleButton>
+      <CustomToggleButton value="option2">Option 2</CustomToggleButton>
+      <CustomToggleButton value="option3">Option 3</CustomToggleButton>
+    </ToggleButtonGroup>
   );
 };
 
-export default ToggleButtonComponent;
+export default ToggleGroupComponent;
